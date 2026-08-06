@@ -1,19 +1,34 @@
-const express = require("express");
-const cors = require("cors");
-const dotenv = require("dotenv");
-const cookieParser = require("cookie-parser");
+import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
 
-dotenv.config();
+import connectDB from "./config/mongodb.js";
+import authRouter from "./routes/authRoutes.js";
+import dotenv from "dotenv";
 
+dotenv.config({ path: "./server/.env" });
+// console.log(process.env);
+// console.log("MONGODB_URI:", process.env.MONGODB_URI);
+// console.log("Loaded URI:", process.env.MONGODB_URI);
 const app = express();
-const port = process.env.PORT || 7000;
+const PORT = process.env.PORT || 7000;
+
+connectDB();
 
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({ credentials: true }));
+app.use(cors());
 
-app.get("/",(req,res)=> res.send("Server is running")); 
 
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+// API Endpoints
+app.get("/", (req, res) => {res.send("Server is running...");
+});
+
+
+app.use("/api/auth", authRouter);
+
+
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
