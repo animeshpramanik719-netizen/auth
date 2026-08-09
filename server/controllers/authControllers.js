@@ -1,6 +1,8 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import userModel from "../models/userModel.js";
+import transporter from "../config/nodemailer.js";
+import { text } from "express";
 
 export const register = async (req, res) =>{
      console.log("Register API Hit");
@@ -18,7 +20,7 @@ export const register = async (req, res) =>{
 
         if(existing){
 
-            res.json({success: false, message: "User already exists"});
+           return res.json({success: false, message: "User already exists"});
 
         }
 
@@ -35,13 +37,31 @@ export const register = async (req, res) =>{
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: process.env.NODE_ENV === 'production' ? 'none': 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000
+            maxAge: 7 * 24 * 60 * 60 * 1000,
          });
+
+
+         //sending  wellcome email to the user after registration
+         const mailOptions = {
+    from: process.env.SENDER_EMAIL,
+    to: email,
+    subject: "Welcome to Our App",
+    html: `
+        <h2>Welcome to Our App!</h2>
+        <p>Your account has been successfully created.</p>
+        <p>Your email: <strong>${email}</strong></p>
+        <p>We are excited to have you on board!</p>
+        <p>Thank you.</p>
+    `,
+};
+
+await transporter.sendMail(mailOptions);
 
          return res.json({success: true,})
 
 
      }catch(error){
+        console.error(error);
         res.json({success: false, message: error.message })
 
 
