@@ -151,7 +151,7 @@ export const sendVerifyOtp = async (req, res) => {
         );
 
         user.verifyOtp = otp;
-        user.verifyOtpExpiryAt = Date.now() + 10 * 60 * 1000;
+        user.verifyOtpExpireAt = Date.now() + 10 * 60 * 1000;
 
         await user.save();
 
@@ -241,8 +241,8 @@ export const verifyEmail = async (req, res) => {
 
         // Check OTP expiry
         if (
-            !user.verifyOtpExpiryAt ||
-            new Date(user.verifyOtpExpiryAt).getTime() < Date.now()
+            !user.verifyOtpExpireAt ||
+            user.verifyOtpExpireAt < Date.now()
         ) {
             return res.json({
                 success: false,
@@ -255,7 +255,7 @@ export const verifyEmail = async (req, res) => {
 
         // Clear OTP after successful verification
         user.verifyOtp = "";
-        user.verifyOtpExpiryAt = null;
+        user.verifyOtpExpireAt = 0;
 
         await user.save();
 
@@ -273,4 +273,3 @@ export const verifyEmail = async (req, res) => {
         });
     }
 };
-

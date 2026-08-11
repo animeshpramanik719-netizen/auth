@@ -1,2 +1,4 @@
 import dotenv from "dotenv";
-dotenv.config({ path: "./server/.env" });
+import { fileURLToPath } from "url";
+
+dotenv.config({ path: fileURLToPath(new URL("../.env", import.meta.url)) });
