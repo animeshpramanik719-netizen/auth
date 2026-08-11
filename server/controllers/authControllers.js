@@ -179,18 +179,29 @@ export const sendVerifyOtp = async (req, res) => {
 
 
 
+
 export const verifyEmail = async (req, res) => {
-    const { otp } = req.body;
-    const { userId } = req.user;
-
-    if (!otp) {
-        return res.json({
-            success: false,
-            message: "OTP is required"
-        });
-    }
-
     try {
+        const { otp } = req.body;
+        const userId = req.user?.userId;
+
+        // Check userId
+        if (!userId) {
+            return res.json({
+                success: false,
+                message: "User not authenticated"
+            });
+        }
+
+        // Check OTP
+        if (!otp) {
+            return res.json({
+                success: false,
+                message: "OTP is required"
+            });
+        }
+
+        // Find user
         const user = await userModel.findById(userId);
 
         if (!user) {
@@ -200,23 +211,51 @@ export const verifyEmail = async (req, res) => {
             });
         }
 
-        if (user.verifyOtp !== otp) {
+        // Check if already verified
+        if (user.isAccountVerified) {
+            return res.json({
+                success: false,
+                message: "Email is already verified"
+            });
+        }
+
+        // Check OTP exists
+        if (!user.verifyOtp) {
+            return res.json({
+                success: false,
+                message: "No OTP found. Please request a new OTP"
+            });
+        }
+
+        // Convert both OTPs to strings
+        const enteredOtp = String(otp).trim();
+        const savedOtp = String(user.verifyOtp).trim();
+
+        // Check OTP
+        if (enteredOtp !== savedOtp) {
             return res.json({
                 success: false,
                 message: "Invalid OTP"
             });
         }
 
-        if (user.verifyOtpExpiryAt < Date.now()) {
+        // Check OTP expiry
+        if (
+            !user.verifyOtpExpiryAt ||
+            new Date(user.verifyOtpExpiryAt).getTime() < Date.now()
+        ) {
             return res.json({
                 success: false,
                 message: "OTP Expired"
             });
         }
 
+        // Verify account
         user.isAccountVerified = true;
+
+        // Clear OTP after successful verification
         user.verifyOtp = "";
-        user.verifyOtpExpiryAt = 0;
+        user.verifyOtpExpiryAt = null;
 
         await user.save();
 
@@ -226,9 +265,12 @@ export const verifyEmail = async (req, res) => {
         });
 
     } catch (error) {
-        return res.json({
+        console.error("Verify Email Error:", error);
+
+        return res.status(500).json({
             success: false,
             message: error.message
         });
     }
 };
+
